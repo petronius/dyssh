@@ -1,0 +1,68 @@
+
+[dyssh]
+
+## Default hosts to connect to if none are specified.
+# hosts = localhost, root@localhost, 127.0.0.1
+
+# prompt = %(hostname)s>
+
+# auto_add_hosts = false
+
+# write_all_logs = false
+
+# histfile = ~/.dyssh-history
+
+## Set this option to 'true' to use CTL-C to interrupt jobs on remote hosts.
+# send_interrupts = false
+
+## If set to 'true', commands must be terminated by a CTL-D on an empty line, to
+## allow for arbitrary multi-line input. Otherwise each line of input will be
+## treated as a distinct command.
+# multiline_input = false
+
+## Sets a default username, port, and/or password for all hosts. Additionally,
+## you can specify these parameters in the actual host list, either using the
+## default_hosts parameter, above, or at the command line/interactive prompt. In
+## all cases, the following format applies:
+##
+##     <username>:<password>@<hostname>:<port>
+##
+## All possible combinations for this syntax are as follows:
+##
+##     <hostname>
+##     <username>@<hostname>
+##     <username>:<password>@<hostname>
+##     :<password>@<hostname>               # Specify only a password; use the
+##                                          # default user name.
+##     <hostname>:<port>
+##     <username>@<hostname>:<port>
+##     <username>:<password>@<hostname>:<port>
+##     :<password>@<hostname>:<port>
+##
+##
+# username = myuser
+# password = mypassword
+# port = 22
+
+[files]
+
+## Prefix to use when creating copies of files with the :get command.
+copy_prefix = %(hostname)s-
+
+
+[logging_and_output]
+
+# pager = less -r -N
+
+## The format string used by datetime.strftime when creating the log file name
+timestamp_format = %y%m%d-%H%M%S
+
+## The log file path relative to the root of the logging directory
+log_file = %(hostname)s/dyssh-%(hostname)s-%(timestamp)s.log
+
+## Base path for writing logs
+log_path = ./
+
+[interactive_mode]
+
+# job_timeout = 0
