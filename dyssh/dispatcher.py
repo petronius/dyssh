@@ -7,6 +7,7 @@ remote hosts and acts accordingly.
 
 
 import sys
+import os
 import pydoc
 import StringIO
 import textwrap
@@ -32,13 +33,14 @@ def run_interactive(command = ''):
     if command:
         run(command)
 
-    prompt = config.get('prompt', '').strip() + ' '
-    prompt %= {
-        'hostname': config.get('local_hostname'),
-    }
-
     while True:
         try:
+            prompt = config.get('prompt', '').strip() + ' '
+            prompt %= {
+                'hostname': config.get('local_hostname'),
+                'local_wd': os.getcwd(),
+                'remote_wd': config.get('working_directory'),
+            }
             command = raw_input(prompt)
             if command.startswith(':'):
                 c, _, args = command[1:].partition(' ')
@@ -108,20 +110,38 @@ def cmd_add(*args):
         connections.conns.add(i)
     return sysexits.EX_OK
 
-#
-#def cmd_flush(*args):
-#
-#    return sysexits.EX_OK
-#
-#
-#def cmd_get(*args):
-#
-#    return sysexits.EX_OK
+
+def cmd_cd(*args):
+    """
+    :cd <path>            Sets the 'working_directory' config option. This path
+                          will be set as the working directory with the `cd`
+                          command before executing any individual command on the
+                          remote host.
+    """
+    if len(args) == 1:
+        config.config['working_directory'] = args[0]
+    else:
+        return sysexits.EX_USAGE
+    return sysexits.EX_OK
+
+
+def cmd_get(*args):
+    """
+    :get <remote> <local> Copy the file at <remote> path for each remote host to
+                          <local> path. Each file will be renamed (or placed in
+                          a sub-directory) according to the value given by the
+                          'get_path_template' config option.
+    """
+    if len(args) == 2:
+        connections.conns.get_file_all(args[0], args[1])
+    else:
+        return sysexits.EX_USAGE
+    return sysexits.EX_OK
 
 
 def cmd_help(*args):
     """
-    :help <cmd>           Show interactive command help. <cmd> is optional.
+    :help [cmd]           Show interactive command help.
     """
     # Builds the helps string out of the __doc__ strings of all cmd_* functions.
     output = ""
@@ -147,8 +167,14 @@ def cmd_history(*args):
         if not history:
             terminal.error(text = "No history available for %s" % args[0])
         else:
-            headers = ('', '')
-            output = [ ('[%s]'% i, h.get('command')) for i, h in enumerate(history) ]
+            headers = ('\n#', 'Command', 'Exit code')
+            output = []
+            for i, h in enumerate(history):
+                output.append(
+                    '%s' % i,
+                    h.get('command'),
+                    h.get('exitcode'),
+                )
             print terminal.format_columns(headers, output), '\n'
     else:
         return sysexits.EX_USAGE
@@ -160,8 +186,8 @@ def cmd_join(*args):
     :join <host>          If there is an active command running on <host>,
                           connect to that host in an interactive terminal
                           session. When the session ends (either through exit,
-                          disconnect, or error), you will return to the dyssh
-                          prompt.
+                          disconnect, or error), you will be returned to the
+                          dyssh prompt.
     """
     if len(args) == 1:
         connections.conns.join(args[0])
@@ -207,10 +233,17 @@ def cmd_list(*args):
     print '\n', terminal.format_columns(headers, output), '\n'
     return sysexits.EX_OK
 
-#
-#def cmd_put(*args):
-#
-#    return sysexits.EX_OK
+
+def cmd_put(*args):
+    """
+    :put <local> <remote> Copy the file at <local> path for each remote host to
+                          <remote> path.
+    """
+    if len(args) == 2:
+        connections.conns.put_file_all(args[0], args[1])
+    else:
+        return sysexits.EX_USAGE
+    return sysexits.EX_OK
 
 
 def cmd_remove(*args):
@@ -227,10 +260,13 @@ def cmd_remove(*args):
 
 def cmd_timeout(*args):
     """
-    :timeout <seconds>    Seconds to wait for jobs to complete before returning
-                          to the interactive prompt. Jobs that time out will
-                          continue to operate in the background, and can be
-                          checked with either :status or by using :join.
+    :timeout              Show the current value for the 'job_timeout' config
+                          option.
+    :timeout <seconds>    Set the current value for the 'job_timeout' config
+                          option. Seconds to wait for jobs to complete before
+                          returning to the interactive prompt. Jobs that time
+                          out will continue to operate in the background, and
+                          can be checked with either :status or by using :join.
     """
     
     if len(args) == 1 and args[0].isdigit():
@@ -239,10 +275,50 @@ def cmd_timeout(*args):
             t = 0
         config.config['job_timeout'] = t
         terminal.error(text = "Timeout set to %s seconds" % t)
+    elif len(args) == 0:
+        print config.get('job_timeout')
     else:
         return sysexits.EX_USAGE
 
     return sysexits.EX_OK
+
+
+def cmd_env(*args):
+    """
+    :env format [FORMAT]  Show or set the format of environmental variable
+                          declarations. Use '%(key)s' and '%(value)s' to specify
+                          the substitutions in your string.
+    :env list             List all environmental variables that are being set on
+                          each command.
+    :env set <VAR>=<VAL>  Before executing each command on a remote host
+                          set the environmental variable <VAR> to the value
+                          given by <VAL>.
+    :env unset <VAR>      Before executing each command on a remote host
+                          set the environmental variable <VAR> to the value
+                          given by <VAL>.
+    """
+    envvars = config.get('envvars', {})
+    if len(args) == 1 and args[0] == 'list':
+        print terminal.format_columns(
+            ('Variable', 'Value'),
+            sorted(envvars.items())
+        )
+    elif len(args) == 1 and args[0] == 'format':
+        print config.get('envvar_format', '')
+    elif len(args) > 1 and args[0] == 'format':
+        config.config['envvar_format'] = ' '.join(args[1:])
+    elif len(args) > 1 and args[0] == 'set':
+        k, _, v = ' '.join(args[1:]).partition('=')
+        envvars[k] = v
+    elif len(args) == 2 and args[0] == 'unset':
+        k = args[1]
+        if k in envvars:
+            del envvars[k]
+    else:
+        return sysexits.EX_USAGE
+    config.config['envvars'] = envvars
+    return sysexits.EX_OK
+
 
 def cmd_show(*args):
     """
@@ -280,19 +356,25 @@ def cmd_show(*args):
                     output.seek(0)
                 last_history['output'] = output
             outstr = ''
-            outstr += terminal.errorstr(text = terminal.tocolor(command, 'bold'))
+            outstr += terminal.error(
+                text = terminal.tocolor(command + '\n', 'bold'),
+                silent = True
+            )
             for line in outlines:
-                outstr += terminal.errorstr(
-                    '[%s]' % host,
+                outstr += terminal.error(
+                    '[%s] ' % host,
                     line.strip('\n'),
-                    1
+                    1,
+                    silent = True
                 )
-            outstr += terminal.errorstr(text = 'Exit code: %s' % exitcode)
-            outstr = outstr.replace('\r\n', '\n')
+            outstr += terminal.error(
+                text = 'Exit code: %s' % exitcode,
+                silent = True
+            )
+            outstr = outstr.replace('\r', '\n')
             pydoc.pipepager(outstr, config.get('pager'))
     else:
         return sysexits.EX_USAGE
-
     return sysexits.EX_OK
 
 
@@ -325,16 +407,6 @@ def cmd_traceback(*args):
     global last_traceback
     print last_traceback
     return sysexits.EX_OK
-
-#
-#def cmd_flush(*args):
-#
-#    return sysexits.EX_OK
-#
-#
-#def cmd_write(*args):
-#
-#    return sysexits.EX_OK
 
 
 def cmd_quit(*args):

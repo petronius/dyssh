@@ -76,7 +76,7 @@ def main(command = None):
         error_output = connection_error)
     connections.set(conns)
 
-    if config.get('interactive'):
+    if config.get('interactive') or not command:
         exitcode = dispatcher.run_interactive(command)
     else:
         exitcode = dispatcher.run(command)
@@ -117,6 +117,6 @@ if __name__ == '__main__':
         atexit.register(readline.write_history_file, histfile)
     except ImportError:
         pass
-        
+
     exitcode = main(command)
     sys.exit(exitcode)

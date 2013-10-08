@@ -4,7 +4,7 @@
 ## Default hosts to connect to if none are specified.
 # hosts = localhost, root@localhost, 127.0.0.1
 
-# prompt = %(hostname)s>
+# prompt = %(remote_wd)s $
 
 # auto_add_hosts = false
 
@@ -44,10 +44,16 @@
 # password = mypassword
 # port = 22
 
+[shell_options]
+
+working_directory = ~
+envvars =  MYVAR=1;OTHER_VAR=A
+envvar_format = _dyssh='%(key)s'\ndeclare "$_dyssh=%(value)s"\n
+
 [files]
 
 ## Prefix to use when creating copies of files with the :get command.
-copy_prefix = %(hostname)s-
+get_path_format = %(path)s/%(host)s.%(filename)s
 
 
 [logging_and_output]

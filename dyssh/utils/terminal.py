@@ -29,7 +29,7 @@ def tocolor(text, color):
     return "\001\033[%sm\002%s\001\033[0m\002" % (rcolor, text)
 
 
-def errorstr(prefix = '(dyssh) ', text  = '', lvl = 0):
+def error(prefix = '(dyssh) ', text  = '', lvl = 0, silent = 0):
     """
     Print a message to stderr. Error level determines what color to use for the
     message prefix.
@@ -42,7 +42,10 @@ def errorstr(prefix = '(dyssh) ', text  = '', lvl = 0):
     elif lvl == 2:
         color = 'bold red'
 
-    print >>sys.stderr, tocolor(prefix, color),  + text
+    err = tocolor(prefix, color) + text
+    if not silent:
+        print >>sys.stderr, err
+    return err
     
 
 def warn(prefix = '(dyssh) ', text  = '', lvl = 0):

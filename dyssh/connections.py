@@ -8,6 +8,7 @@ other modules can reference that instance.
 # TODO: detect wait for data from stdin and create interface for that.
 
 import datetime
+import os
 import paramiko
 import select
 import socket
@@ -44,9 +45,6 @@ class Connections(object):
         self.debug = debug_level
         self.connect_all()
         self.killorders = {}
-        
-    def deltest(self):
-        self.__del__()
 
 
     def _error(self, msg, lvl = -10):
@@ -221,6 +219,43 @@ class Connections(object):
             self.disconnect(host)
 
 
+    def get_file(self, source, target, h):
+        """
+        Copy the file at the path <remote> on the remote host <h> to the target
+        at <target> on the local system. The file will be renamed according to
+        the values in config.config['get_path_format'].
+        """
+        host = self._gethost(h)
+        if host:
+            client = self.hconn[host]['client']
+            sftp = client.open_sftp()
+            path, filename = os.path.split(target)
+            fmt = config.get('get_path_format', '%(path)s/%(host)s.%(filename)s')
+            target = fmt % {
+                'path': path,
+                'host': host,
+                'filename': filename,
+            }
+            try:
+                os.makedirs(os.path.dirname(target))
+            except os.error:
+                pass
+            sftp.get(source, target)
+            sftp.close()
+        else:
+            self._info("No such host in list: %s" % h)
+
+
+    def get_file_all(self, source, target):
+        """
+        Copy the file at the path <remote> on each remote host to the target
+        at <target> on the local system. The files will be renamed according to
+        the values in config.config['get_path_format'].
+        """
+        for host in self.hosts:
+            self.get_file(source, target, host)
+
+
     def get_history(self, host):
         """
         Get the command history for <host>.
@@ -244,7 +279,7 @@ class Connections(object):
     def join(self, h):
         """
         Creates an interactive session with the pseudo-terminal running the job
-        on <host>. Useful for resolving hung processes.
+        on host <h>. Useful for resolving hung processes.
 
         This is based on the examples from the demos in the paramiko source,
         which can be found here:
@@ -308,7 +343,7 @@ class Connections(object):
 
     def kill(self, h):
         """
-        Stop the background thread for <host> if it is running.
+        Stop the background thread for host <h> if it is running.
         """
         host = self._gethost(h)
         status = dict(self.status())
@@ -330,9 +365,33 @@ class Connections(object):
             self.kill(host)
 
 
+    def put_file(self, source, target, h):
+        """
+        Copy the file at the path <source> on the local machine to the target
+        at <target> on host <h>.
+        """
+        host = self._gethost(h)
+        if host:
+            client = self.hconn[host]['client']
+            sftp = client.open_sftp()
+            sftp.put(source, target)
+            sftp.close()
+        else:
+            self._info("No such host in list: %s" % h)
+
+
+    def put_file_all(self, source, target):
+        """
+        Copy the file at the path <source> on the local machine to the target
+        at <target> on each remote host.
+        """
+        for host in self.hosts:
+            self.put_file(source, target, host)
+
+
     def remove(self, h):
         """
-        Remove <host> from the list of managed hosts. <host> may be either the
+        Remove host <h> from the list of managed hosts. <h> may be either the
         host name or index.
         """
         host = self._gethost(h)
@@ -374,7 +433,17 @@ class Connections(object):
 
         stdin = chan.makefile('wb', bufsize)
         output = chan.makefile('rb', bufsize)
-        chan.exec_command(command)
+        tmp_command = ''
+        working_dir = config.get('working_directory')
+        if working_dir:
+            tmp_command += 'cd %s\n' % working_dir
+        for k, v in config.get('envvars', {}).items():
+            tmp_command += config.get('envvar_format', '') % {
+                'key': k,
+                'value': v,
+            }
+        tmp_command = '\n'.join([tmp_command, command])
+        chan.exec_command(tmp_command)
         
         history = {
             'output': output,
@@ -412,7 +481,11 @@ class Connections(object):
             p.start()
 
         for host, p in self.jobs:
-            time.sleep(config.get('job_timeout') or 0)
+            try:
+                time.sleep(config.get('job_timeout') or 0)
+            except KeyboardInterrupt:
+                self._error("Timeout interrupted!")
+                pass
             isalive = p.isAlive() if hasattr(p, 'isAlive') else p.is_alive()
             if not isalive:
                 self._info("Job on %s finished" % host)
@@ -433,8 +506,10 @@ class Connections(object):
         """
         r = []
         for host in self.hosts:
-            history = self.get_history(host)[-1]
-            r.append((host, history.get('exitcode')))
+            history = self.get_history(host)
+            if history:
+                history = history[-1]
+                r.append((host, history.get('exitcode')))
         return r
 
 

@@ -18,7 +18,7 @@ config = {
     'histfile': os.path.expanduser('~') + '/.dyssh-history',
     
     'local_hostname': 'local',
-    'prompt': '[%(hostname)s]>',
+    'prompt': '%(remote_wd)s $',
 
     'default_hosts': [],
     'auto_add_hosts': False,
@@ -35,12 +35,18 @@ config = {
 #    'log_file': '%(hostname)s/dyssh-%(hostname)s-%(timestamp)s.log',
 #    'log_path': './',
 
-    'pager': 'less -r -N',
+    'pager': 'less -r',
     'job_timeout': .1, # seconds to wait for jobs to complete in interactive mode
 
     # Runtime options
     'interactive': False,
     'hosts': [],
+
+    'working_directory': '~',
+
+    'envvars': {},
+    'envvar_format': """_dyssh='%(key)s'\ndeclare "$_dyssh=%(value)s"\n""",
+    'get_path_format': '%(path)s/%(host)s.%(filename)s',
 }
 
 
@@ -58,7 +64,7 @@ def update(*args):
     invalid_args = []
 
     for arg in args:
-        
+
         if arg.startswith('--'):
 
             arg, _, val = arg.partition('=')
@@ -78,6 +84,8 @@ def update(*args):
                     val = val.strip()
                     if val.startswith('~/'):
                         config[argkey] = os.path.expanduser('~') + val[2:]
+                elif argkey in ['envvars']:
+                    config[argkey] = val
                 continue
 
             # Options which are just boolean flags
@@ -103,6 +111,16 @@ def update(*args):
 
     except (TypeError, IOError, OSError):
         warn('Unable to open configuration file: %s' % config.get('config'))
+
+    for k, v in config.items():
+        # Parse the envvars conf into a dict
+        if k == 'envvars' and isinstance(v, basestring):
+            envvars = {}
+            v = v.split(';')
+            for i in v:
+                x, _, y = i.partition('=')
+                envvars[x] = y
+            config['envvars'] = envvars
 
 
 def get(*args):
