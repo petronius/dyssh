@@ -34,9 +34,9 @@ reliable as some of the more mature tools that are available.
 That said, here are the most important caveats:
 
 * Each command is run in a new pseudo-terminal session, so environmental
-  variables and program outputs aren't available from one command to the next
-  (this is on my to-do list to fix, probably by setting them on each individual
-  session).
+  variables have to be re-set on each command execution. In an interactive
+  session this is taken care of transparently using the `:env` command. At the
+  command line, you can use the `--envvars` flag.
 * I have no idea how this program will handle extremely large amounts of output.
   Probably by eating all of your memory and then failing. Brief tests with `yes`
   were uh ... problematic. (Lots of time waiting for the program to finish
@@ -46,9 +46,12 @@ That said, here are the most important caveats:
 
 ## Dependencies
 
-* Python 2.5.x, 2.6.x, or 2.7.x
-* [paramiko](https://github.com/paramiko/paramiko)
-* This program utilizes termios and makes a couple of other *NIX-specific 
+* Python 2.5, 2.6, or 2.7
+* The [Paramiko](https://github.com/paramiko/paramiko) Python module. Paramiko
+  is available in the Python Package Index (using `pip` or `easy_install`) as
+  well as in many Linux repositories (in Arch as `python2-paramiko` and Debian
+  as `python-paramiko`).
+* This program uses the `termios` module and makes a number of other POSIX
   assumptions, and so will not run on Windows without some modification. That
   said, I would welcome contributions in that regard.
 * By default, I'm assuming you have the `less` pager installed on your system. 
