@@ -51,11 +51,12 @@ That said, here are the most important caveats:
   is available in the Python Package Index (using `pip` or `easy_install`) as
   well as in many Linux repositories (in Arch as `python2-paramiko` and Debian
   as `python-paramiko`).
-* This program uses the `termios` module and makes a number of other POSIX
-  assumptions, and so will not run on Windows without some modification. That
-  said, I would welcome contributions in that regard.
+* This program uses the [termios](http://docs.python.org/2/library/termios.html)
+  module and makes a number of other POSIX assumptions, and so will not run on 
+  Windows without some modification. That said, I would welcome contributions 
+  in that regard.
 * By default, I'm assuming you have the `less` pager installed on your system. 
   If you don't, you can change it, either by using the config file mechanism,
   setting a `--pager=<somepager>` option, or editing `config.py` directly.
 
-This has been tested on OS X and Debian GNU/Linux.
+This has been tested on OS X and Debian.
