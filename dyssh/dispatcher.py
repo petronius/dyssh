@@ -170,11 +170,11 @@ def cmd_history(*args):
             headers = ('\n#', 'Command', 'Exit code')
             output = []
             for i, h in enumerate(history):
-                output.append(
+                output.append((
                     '%s' % i,
                     h.get('command'),
                     h.get('exitcode'),
-                )
+                ))
             print terminal.format_columns(headers, output), '\n'
     else:
         return sysexits.EX_USAGE

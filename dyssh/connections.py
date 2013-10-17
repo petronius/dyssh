@@ -288,7 +288,7 @@ class Connections(object):
         host = self._gethost(h)
         if host:
             history = self.get_history(host)[-1]
-            if history.get('exitcode') is -1:
+            if history.get('exitcode') not in [None, -1]:
                 self._info("No pending job on %s" % host)
                 return
             chan = history.get('chan')
