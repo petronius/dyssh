@@ -33,18 +33,6 @@ At the prompt, there are several commands available. All interactive commands
 colon. The :help command will display all available options.
 """
 
-
-#TODO:
-#- persistent sessions or a way of setting envvars
-#- :put and :get
-#- timeout for command executions in non-interactive mode
-#- :flush for clearing all past history
-#- :write for writing logs from the interactive session; implement logs from
-#  non-interactive sessions
-#- clean up (dyssh) outputs.
-#- simplify terminal.error function, give utility modules better names.
-
-
 __author__  = "Michael Schuller <michael.schuller@artlogic.net>"
 __version__ = "0.0.1"
 __license__ = "GNU Lesser General Public License (LGPL)"
