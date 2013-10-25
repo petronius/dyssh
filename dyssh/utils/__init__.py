@@ -4,6 +4,5 @@ rest of the program operates.
 """
 
 
-import poll
 import sysexits
 import terminal
