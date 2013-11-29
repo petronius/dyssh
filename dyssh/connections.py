@@ -167,7 +167,7 @@ class Connections(object):
                     hostname,
                     port or config.get('port'),
                     username,
-                    password
+                    password,
                 )
                 connected = True
                 e = None

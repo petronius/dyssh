@@ -14,3 +14,8 @@
   on a subset of hosts)
 * `:hide <h|all>` and `:show <h|all>` and `:focus <h>` for temporarily ignoring
   certain hosts.
+
+* better alignment with SSH command line arguments
+* make sure custom keyfiles are supported
+* better support for passwords
+* seperate host configuration files
