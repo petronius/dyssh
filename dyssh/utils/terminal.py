@@ -86,10 +86,8 @@ def format_columns(headers, output, padlength = 4):
     for line in output_columns:
         outline = ''
         for i, col in enumerate(line):
-            if col is None:
-                col = ''
-            col = str(col)
-            outline += col + (' '*(column_sizes[i] - len(col)))
+            col = str(col if col is not None else '')
+            outline += col.ljust(column_sizes[i])
         lines.append(outline)
     return '\n'.join(lines)
 
