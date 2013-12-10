@@ -22,9 +22,6 @@ except ImportError:
         """
         try:
             hw = struct.unpack('hh', fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234'))
-        except IOError:
-            # No such file descriptor?
-            pass
         except:
             try:
                 hw = (os.environ['LINES'], os.environ['COLUMNS'])

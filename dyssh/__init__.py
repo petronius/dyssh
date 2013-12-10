@@ -41,12 +41,24 @@ __license__ = "GNU Lesser General Public License (LGPL)"
 import os
 import sys
 
-import config
-import connections
-import dispatcher
+try:
+    from __future__ import absolute_import
 
-from utils import sysexits
-from utils.terminal import error
+    from . import config
+    from . import connections
+    from . import dispatcher
+
+    from .utils import sysexits
+    from .utils.terminal import error
+
+except ImportError:
+
+    import config
+    import connections
+    import dispatcher
+
+    from utils import sysexits
+    from utils.terminal import error
 
 __all__ = ["main",]
 

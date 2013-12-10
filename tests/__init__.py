@@ -1,139 +1,105 @@
 import curses
+import curses.panel
+import functools
 import os
 import sys
 import time
+import traceback
 
 import consoleinfo
+import text
+import windows
 
-stdscr = curses.initscr()
+# USE curses.wrapper(func,...)
+def init():
+    curses.noecho()
 
+    windows.stdscr.keypad(1)
+    windows.stdscr.nodelay(1)
+    windows.stdscr.timeout(0)
 
-curses.noecho()
+    if curses.has_colors():
+        curses.start_color()
+        curses.use_default_colors()
 
-stdscr.keypad(1)
-stdscr.nodelay(1)
-stdscr.timeout(0)
-
-try:
-    curses.curs_set(0)
-except:
-    if os.environ.get("TERM") == 'xterm-color':
-        os.environ['TERM'] = 'xterm'
+    try:
         curses.curs_set(0)
+    except:
+        if os.environ.get("TERM") == 'xterm-color':
+            os.environ['TERM'] = 'xterm'
+            curses.curs_set(0)
 
-curses.cbreak()
-curses.meta(1)
+    curses.cbreak()
+    curses.meta(1)
+    
 
-def exit():
+def cleanup():
     curses.nocbreak()
-    stdscr.keypad(0)
+    windows.stdscr.keypad(0)
     curses.echo()
     curses.endwin()
-    sys.exit()
 
 
-class Window(object):
+if __name__ == '__main__':
 
-    win = None
-    stdscr = stdscr
+    init()
 
+    out = None
 
-class MainPadWindow(object):
-
-    def __init__(self, clearspace = 2, maxscrollback = 10):
+    try:
         height, width = consoleinfo.get_terminal_size()
-        self.toprow = 0
-        self.leftcol = 0
-        self.h = height - clearspace
-        self.w = width
-        self.win = curses.newpad(self.h + maxscrollback, self.w)
-        self.scrollpos = 0
-        self.win.idlok(1)
-        self.win.scrollok(1)
+        clearspace = 5
 
-        self.scrollback = []
-        self.scrollforward = []
+        mainwindow = windows.ScrollWindow(size = (height - 5, width),
+            scrollback = 500)
 
+        hiddenwindow = windows.ScrollWindow(size = (height - 5, width),
+            scrollback = 500)
 
-    def addtext(self, text):
-        self.win.addstr(text)
-        cursy, cursx = self.win.getyx()
-        wintop = self.h + self.scrollpos
-        if cursy > wintop:
-            self.scroll(cursy - wintop)
-        else:
-            self.refresh()
+        stackgroup = windows.StackGroup(mainwindow, hiddenwindow)
 
-    def scroll(self, lines):
-        self.scrollpos += lines
-        cursy, cursx = self.win.getyx()
-        scrollmax = cursy - self.h
-        if self.scrollpos < 0:
-            self.scrollpos = 0
-        elif self.scrollpos > scrollmax:
-            self.scrollpos = scrollmax
-        self.refresh()
+        statusbar = windows.Window(size = (1, width), offset = (height - 4, 0),
+            attributes = (curses.A_NORMAL, curses.color_pair(6),))
 
-    def refresh(self):
-        self.win.redrawwin()
-        self.win.noutrefresh(self.scrollpos, 0, self.toprow, self.leftcol, self.h, self.w)
+        hiddenwindow.settext('Ready.')
+        mainwindow.hide()
+        statusbar.settext('(None)')
 
+        #statusbar.text_formatter = lambda self, t: text.to_color(t, 'red')
+        windows.update_all()
 
-class StatusBar(object):
+        c = 0
 
-    def __init__(self, starthpos = 0, barheight = 1):
-        height, width = consoleinfo.get_terminal_size()
-        self.toprow = starthpos
-        self.leftcol = 0
-        self.h = barheight
-        self.w = width
-        self.win = curses.newwin(self.h, self.w, self.toprow, self.leftcol)
-        self.win.bkgd(curses.A_REVERSE)
+        while True:
+            event = windows.stdscr.getch()
+            
+            if event and event > 0:
+                statusbar.settext(str(event) + ' (' + (chr(event) if event < 256 else '') + ')')
 
-    def status(self, text):
-        text = text.strip()
-        self.win.erase()
-        self.win.addstr(0,0, text)
-        self.win.redrawwin()
-        self.win.noutrefresh()
+            if event == ord("q"): break
+            if event == ord('s'):
+                if mainwindow.hidden:
+                    mainwindow.show()
+                else:
+                    mainwindow.hide()
+            elif event == ord("p"):
+                c += 1
+                l = ' test charlist'
+                for window in stackgroup:
+                    window.write('%s %s %s' % (repr(window), c, l))
+            elif event == curses.KEY_UP:
+                stackgroup[-1].scroll(-1)
+            elif event == curses.KEY_DOWN:
+                stackgroup[-1].scroll(1)
+            elif event > 0 and event < 256 and chr(event) in [str(i) for i in range(10)]:
+                for win in stackgroup:
+                    pass
 
+            windows.update_all()
+    except:
+        out = traceback.format_exc()
+    finally:
+        cleanup()
 
-
-class CommandWindow(object):
-    pass
-
-height, width = consoleinfo.get_terminal_size()
-
-#win = curses.newwin(height, width, 0, 0)
-
-height, width = consoleinfo.get_terminal_size()
-clearspace = 5
-
-mainwindow = MainPadWindow(clearspace = clearspace)
-statusbar = StatusBar(starthpos = height - clearspace + 2)
-
-mainwindow.addtext('Ready.\n')
-statusbar.status('(None)')
-#stdscr.addstr("This is a Sample Curses Script\n\n")
-#stdscr.addstr(height - 2, 0, "Test".ljust(width), curses.A_REVERSE)
-c = 0
-
-while True:
-    curses.doupdate()
-    event = stdscr.getch()
-    if event and event > 0:
-        statusbar.status(repr(event) + '\n')
-    if event == ord("q"): break
-    elif event == ord("p"):
-        c += 1
-        l = "Qui blandit praesent luptatum zzril: delenit augue duis dolore te feugait nulla facilisi nam. Ad minim veniam quis nostrud; exerci tation ullamcorper suscipit lobortis nisl ut aliquip. Modo typi qui, nunc nobis videntur parum clari fiant sollemnes in. Nunc putamus parum claram anteposuerit litterarum formas humanitatis per, seacula quarta decima et quinta decima eodem! Soluta nobis eleifend option congue nihil imperdiet doming. Ut wisi enim ex ea commodo consequat duis autem vel eum iriure dolor in hendrerit in! Odio dignissim liber tempor cum id quod mazim! Placerat facer possim assum typi non habent claritatem insitam. Iusto est usus legentis in iis qui facit eorum claritatem Investigationes demonstraverunt lectores legere me! Mutationem consuetudium lectorum, mirum est notare quam littera gothica quam."
-        mainwindow.addtext('%s %s\n' % (c, l))
-    elif event == curses.KEY_UP:
-        mainwindow.scroll(-1)
-    elif event == curses.KEY_DOWN:
-        mainwindow.scroll(1)
-
-
-curses.endwin()
-
-exit()
+    if out:
+        print out
