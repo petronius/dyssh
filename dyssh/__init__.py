@@ -45,7 +45,6 @@ import config
 import connections
 import dispatcher
 
-from utils import sysexits
 from utils.terminal import error
 
 __all__ = ["main",]
@@ -78,7 +77,7 @@ if __name__ == '__main__':
 
     if '--help' in argv:
         print __doc__
-        sys.exit(sysexits.EX_OK)
+        sys.exit(os.EX_OK)
 
     command = None
     if len(argv) and not argv[-1].startswith('--'):
@@ -92,7 +91,7 @@ if __name__ == '__main__':
     except ValueError, e:
         error('',' '.join(e.args))
         error('',__doc__)
-        sys.exit(sysexits.EX_USAGE)
+        sys.exit(os.EX_USAGE)
         
     try:
         import atexit
