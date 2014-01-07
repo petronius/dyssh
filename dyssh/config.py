@@ -50,7 +50,7 @@ config = {
 }
 
 
-def update(*args):
+def update(args):
     """
     Update the program configuration. *args should be a list of command-line
     arguments from sys.argv.
@@ -64,26 +64,26 @@ def update(*args):
 
     for arg in dir(args):
         
-        v = getattr(agrs, arg)
+        v = getattr(args, arg)
 
-        if arg == 'config':
+        if arg == 'config' and v:
             
             config_filepath = val
 
         elif arg in config.keys():
 
             overrides[arg] = v
-            if arg == 'hosts':
+            if arg == 'hosts' and v:
                 config[arg] = [i.strip() for i in v.split(',')]
-            elif arg in ['config', 'histfile']:
+            elif arg in ['config', 'histfile'] and v:
                 # Expand '~' as necessary:
                 val = val.strip()
                 val = os.path.expanduser(val)
                 config[argkey] = val
-            elif arg in ['envvars']:
+            elif arg in ['envvars'] and v:
                 config[arg] = val
                 
-        else:
+        elif v:
             
             config[arg] = v
 

@@ -35,7 +35,14 @@ __author__  = "Michael Schuller <michael.schuller@artlogic.net>"
 __version__ = "0.0.1"
 __license__ = "GNU Lesser General Public License (LGPL)"
 
-import argparse
+try:
+    import argparse
+except ImportError:
+    try:
+        import optparse
+    except ImportError:
+        raise ImportError("Could not locate either the `optparse` or `argparse` modules.")
+
 import os
 import sys
 
@@ -96,10 +103,27 @@ def main(command = None):
 
 if __name__ == '__main__':
 
-    argparser = argparse.ArgumentParser(description=__doc__)
-    for args, kwargs in ARGS:
-        argparser.add_argument(*args, **kwargs)
-    argv = argparser.parse_args()
+    if 'argparse' in globals():
+        argparser = argparse.ArgumentParser(description = __doc__)
+        for args, kwargs in ARGS.items():
+            argparser.add_argument(*args, **kwargs)
+        argv = argparser.parse_args()
+    else:
+        optparser = optparse.OptionParser(description = __doc__)
+        # With the older optparse module, we have to get the positional
+        # arguments manually.
+        positional = []
+        for args, kwargs in ARGS.items():
+            if len(args) == 1 and not args[0].startswith('-'):
+                positional.append(args[0])
+            elif args[0].startswith('-'):
+                optparser.add_option(*args, **kwargs)
+        options, args = optparser.parse_args()
+        # Add these to the options object so that config.update() checks them
+        for k, v in zip(positional, args):
+            if not hasattr(options, k):
+                setattr(options, k, v)
+        argv = options
 
 #    argv = sys.argv[1:]
 #
@@ -115,7 +139,7 @@ if __name__ == '__main__':
 #        argv = ['--interactive',]
 
     try:
-        config.update(*argv)
+        config.update(argv)
     except ValueError, e:
         error('',' '.join(e.args))
         error('',__doc__)
@@ -132,6 +156,11 @@ if __name__ == '__main__':
         atexit.register(readline.write_history_file, histfile)
     except ImportError:
         pass
+
+    if hasattr(argv, 'command'):
+        command = argv.command
+    else:
+        command = None
 
     exitcode = main(command)
     sys.exit(exitcode)
