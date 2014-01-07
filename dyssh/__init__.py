@@ -41,24 +41,12 @@ __license__ = "GNU Lesser General Public License (LGPL)"
 import os
 import sys
 
-try:
-    from __future__ import absolute_import
+import dyssh.config
+import dyssh.connections
+import dyssh.dispatcher
 
-    from . import config
-    from . import connections
-    from . import dispatcher
-
-    from .utils import sysexits
-    from .utils.terminal import error
-
-except ImportError:
-
-    import config
-    import connections
-    import dispatcher
-
-    from utils import sysexits
-    from utils.terminal import error
+from dyssh.utils import sysexits
+from dyssh.utils.terminal import error
 
 __all__ = ["main",]
 
@@ -71,15 +59,15 @@ def main(command = None):
 
     connection_info = lambda x: error(text = x)
     connection_error = lambda x: error(text = x, lvl = 2)
-    conns = connections.Connections(config.get('hosts'),
+    conns = dyssh.connections.Connections(dyssh.config.get('hosts'),
         info_output = connection_info,
         error_output = connection_error)
-    connections.set(conns)
+    dyssh.connections.set(conns)
 
-    if config.get('interactive') or not command:
-        exitcode = dispatcher.run_interactive(command)
+    if dyssh.config.get('interactive') or not command:
+        exitcode = dyssh.dispatcher.run_interactive(command)
     else:
-        exitcode = dispatcher.run(command)
+        exitcode = dyssh.dispatcher.run(command)
 
     return exitcode
 
@@ -100,7 +88,7 @@ if __name__ == '__main__':
         argv = ['--interactive',]
 
     try:
-        config.update(*argv)
+        dyssh.config.update(*argv)
     except ValueError, e:
         error('',' '.join(e.args))
         error('',__doc__)
@@ -109,7 +97,7 @@ if __name__ == '__main__':
     try:
         import atexit
         import readline
-        histfile = os.path.join(config.get('histfile'))
+        histfile = os.path.join(dyssh.config.get('histfile'))
         try:
             readline.read_history_file(histfile)
         except IOError:
