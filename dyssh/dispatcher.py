@@ -18,7 +18,6 @@ import config
 
 from utils import terminal
 
-
 # Debugging!
 last_traceback = None
 
