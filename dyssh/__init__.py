@@ -61,12 +61,14 @@ ARGS = {
                 'automatically to the list of known hosts, instead of causing '
                 'dyssh to abort the connection attempt. Generally, this is NOT '
                 'something you want to do.',
+        'action': "store_true",
     },
     ('command',): {
         'help': 'The command to run. If `--interactive` is specified, this '
                 'command will run before starting the interactive prompt. If no'
                 ' command is specified, an interactive prompt is the default '
                 'behaviour.',
+        'nargs': '*',
     },
     ('-s','--hosts'): {
         'help': 'A comma-seperated list of hosts to connect to on startup.',
@@ -108,34 +110,19 @@ if __name__ == '__main__':
             argparser.add_argument(*args, **kwargs)
         argv = argparser.parse_args()
     else:
-        optparser = optparse.OptionParser(description = __doc__)
+        optparser = optparse.OptionParser(description = __doc__,
+            usage = "%prog [options] [COMMAND]")
         # With the older optparse module, we have to get the positional
         # arguments manually.
-        positional = []
         for args, kwargs in ARGS.items():
-            if len(args) == 1 and not args[0].startswith('-'):
-                positional.append(args[0])
-            elif args[0].startswith('-'):
+            if args[0].startswith('-'):
                 optparser.add_option(*args, **kwargs)
         options, args = optparser.parse_args()
         # Add these to the options object so that config.update() checks them
-        for k, v in zip(positional, args):
-            if not hasattr(options, k):
-                setattr(options, k, v)
+        command = ' '.join(args)
+        if command:
+            setattr(options, 'command', command)
         argv = options
-
-#    argv = sys.argv[1:]
-#
-#    if '--help' in argv:
-#        print __doc__
-#        sys.exit(sysexits.EX_OK)
-
-#    command = None
-#    if len(argv) and not argv[-1].startswith('--'):
-#        command = argv[-1]
-#        argv = argv[:-1]
-#    elif not len(argv):
-#        argv = ['--interactive',]
 
     try:
         config.update(argv)

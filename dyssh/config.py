@@ -63,8 +63,8 @@ def update(args):
     overrides = {}
 
     for arg in dir(args):
-        
         v = getattr(args, arg)
+        print arg, v
 
         if arg == 'config' and v:
             
@@ -74,6 +74,7 @@ def update(args):
 
             overrides[arg] = v
             if arg == 'hosts' and v:
+                print v
                 config[arg] = [i.strip() for i in v.split(',')]
             elif arg in ['config', 'histfile'] and v:
                 # Expand '~' as necessary:
