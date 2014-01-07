@@ -12,7 +12,3 @@ __pycache__
 *.zip
 *.tar.gz
 *.tgz
-
-# Build leftovers
-build/
-
