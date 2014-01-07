@@ -1,2 +1,18 @@
+
+# Swaps and tempfiles
 *.pyc
 *.swp
+*.swo
+__pycache__
+
+# Python packaging junk
+*.egg-info/
+
+# Any incidentals
+*.zip
+*.tar.gz
+*.tgz
+
+# Build leftovers
+build/
+
