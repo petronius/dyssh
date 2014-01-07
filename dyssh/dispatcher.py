@@ -16,9 +16,7 @@ import traceback
 import connections
 import config
 
-from utils import sysexits
 from utils import terminal
-
 
 # Debugging!
 last_traceback = None
@@ -58,9 +56,9 @@ def run_interactive(command = ''):
                     f, args = possibles[0]
                     args = filter(None, args.split(' '))
                     r = f(*args)
-                    if r == sysexits.EX_USAGE:
+                    if r == os.EX_USAGE:
                         cmd_help(f.__name__[4:])
-                    elif r != sysexits.EX_OK:
+                    elif r != os.EX_OK:
                         terminal.error(text = "Error issuing command: %s" % r,
                             lvl = 1)
                 else:
@@ -77,7 +75,7 @@ def run_interactive(command = ''):
                 lvl = 2)
             print "Enter `:traceback` to print the last error traceback."
 
-    return sysexits.EX_OK
+    return os.EX_OK
 
 
 def run(command = ''):
@@ -92,7 +90,7 @@ def run(command = ''):
 
     connections.conns.run_command_all(command)
 
-    return sysexits.EX_OK
+    return os.EX_OK
 
 
 #
@@ -105,10 +103,10 @@ def cmd_add(*args):
                           more than one host.
     """
     if not args:
-        return sysexits.EX_USAGE
+        return os.EX_USAGE
     for i in args:
         connections.conns.add(i)
-    return sysexits.EX_OK
+    return os.EX_OK
 
 
 def cmd_cd(*args):
@@ -121,8 +119,8 @@ def cmd_cd(*args):
     if len(args) == 1:
         config.config['working_directory'] = args[0]
     else:
-        return sysexits.EX_USAGE
-    return sysexits.EX_OK
+        return os.EX_USAGE
+    return os.EX_OK
 
 
 def cmd_get(*args):
@@ -135,8 +133,8 @@ def cmd_get(*args):
     if len(args) == 2:
         connections.conns.get_file_all(args[0], args[1])
     else:
-        return sysexits.EX_USAGE
-    return sysexits.EX_OK
+        return os.EX_USAGE
+    return os.EX_OK
 
 
 def cmd_help(*args):
@@ -155,7 +153,7 @@ def cmd_help(*args):
     output = filter(lambda x: x.strip(), output)
     output = '\n'.join(output)
     print '\n', textwrap.dedent(output), '\n'
-    return sysexits.EX_OK
+    return os.EX_OK
 
 
 def cmd_history(*args):
@@ -177,8 +175,8 @@ def cmd_history(*args):
                 ))
             print terminal.format_columns(headers, output), '\n'
     else:
-        return sysexits.EX_USAGE
-    return sysexits.EX_OK
+        return os.EX_USAGE
+    return os.EX_OK
 
 
 def cmd_join(*args):
@@ -192,8 +190,8 @@ def cmd_join(*args):
     if len(args) == 1:
         connections.conns.join(args[0])
     else:
-        return sysexits.EX_USAGE
-    return sysexits.EX_OK
+        return os.EX_USAGE
+    return os.EX_OK
 
 
 def cmd_kill(*args):
@@ -208,8 +206,8 @@ def cmd_kill(*args):
     if len(args) == 1:
         connections.conns.kill(args[0])
     else:
-        return sysexits.EX_USAGE
-    return sysexits.EX_OK
+        return os.EX_USAGE
+    return os.EX_OK
 
 
 
@@ -228,10 +226,10 @@ def cmd_list(*args):
         ))
     if not len(output):
         terminal.error(text = 'No hosts.')
-        return sysexits.EX_OK
+        return os.EX_OK
     headers = ('', 'Hostname', 'Connected', 'Last exit')
     print '\n', terminal.format_columns(headers, output), '\n'
-    return sysexits.EX_OK
+    return os.EX_OK
 
 
 def cmd_put(*args):
@@ -242,8 +240,8 @@ def cmd_put(*args):
     if len(args) == 2:
         connections.conns.put_file_all(args[0], args[1])
     else:
-        return sysexits.EX_USAGE
-    return sysexits.EX_OK
+        return os.EX_USAGE
+    return os.EX_OK
 
 
 def cmd_remove(*args):
@@ -252,10 +250,10 @@ def cmd_remove(*args):
                           Optionally specify more than one host.
     """
     if not args:
-        return sysexits.EX_USAGE
+        return os.EX_USAGE
     for i in args:
         connections.conns.remove(i)
-    return sysexits.EX_OK
+    return os.EX_OK
 
 
 def cmd_timeout(*args):
@@ -278,9 +276,9 @@ def cmd_timeout(*args):
     elif len(args) == 0:
         print config.get('job_timeout')
     else:
-        return sysexits.EX_USAGE
+        return os.EX_USAGE
 
-    return sysexits.EX_OK
+    return os.EX_OK
 
 
 def cmd_env(*args):
@@ -315,9 +313,9 @@ def cmd_env(*args):
         if k in envvars:
             del envvars[k]
     else:
-        return sysexits.EX_USAGE
+        return os.EX_USAGE
     config.config['envvars'] = envvars
-    return sysexits.EX_OK
+    return os.EX_OK
 
 
 def cmd_show(*args):
@@ -330,7 +328,7 @@ def cmd_show(*args):
         host = connections.conns._gethost(host)
         if not host:
             terminal.error(text = "No such host")
-            return sysexits.EX_OK
+            return os.EX_OK
         history = connections.conns.get_history(host)
         if not history:
             terminal.error(text = "No output available for %s" % host)
@@ -342,7 +340,7 @@ def cmd_show(*args):
 
             if exitcode is None:
                 terminal.error(text = "Command still pending")
-                return sysexits.EX_OK
+                return os.EX_OK
             else:
                 # This will block if the process isn't complete
                 outlines = output.readlines()
@@ -374,8 +372,8 @@ def cmd_show(*args):
             outstr = outstr.replace('\r', '\n')
             pydoc.pipepager(outstr, config.get('pager'))
     else:
-        return sysexits.EX_USAGE
-    return sysexits.EX_OK
+        return os.EX_USAGE
+    return os.EX_OK
 
 
 def cmd_status(*args):
@@ -398,15 +396,15 @@ def cmd_status(*args):
         headers = ('', 'Host', 'Exit code')
         print '\n', terminal.format_columns(headers, output), '\n'
     else:
-        return sysexits.EX_USAGE
+        return os.EX_USAGE
 
-    return sysexits.EX_OK
+    return os.EX_OK
 
 
 def cmd_traceback(*args):
     global last_traceback
     print last_traceback
-    return sysexits.EX_OK
+    return os.EX_OK
 
 
 def cmd_quit(*args):
@@ -417,4 +415,4 @@ def cmd_quit(*args):
     connections.conns.kill_all()
     terminal.error(text = 'Disconnecting from all remote hosts ...')
     connections.conns.disconnect_all()
-    sys.exit(sysexits.EX_OK)
+    sys.exit(os.EX_OK)
