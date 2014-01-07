@@ -14,3 +14,7 @@
   certain hosts.
 
 * Python 3 compatability?
+* better alignment with SSH command line arguments
+* make sure custom keyfiles are supported
+* better support for passwords
+* seperate host configuration files
