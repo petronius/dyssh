@@ -52,7 +52,7 @@ That said, here are the most important caveats:
 
 ## Dependencies
 
-* Python 2.5, 2.6, or 2.7
+* Python 2.7
 * The [paramiko](https://github.com/paramiko/paramiko) Python module. Paramiko
   is available in the Python Package Index (using `pip` or `easy_install`) as
   well as in many Linux repositories (in Arch as `python2-paramiko` and Debian

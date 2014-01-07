@@ -11,11 +11,11 @@ import os
 from utils.terminal import warn
 
 
-config_filepath = os.path.expanduser('~') + '/.dysshrc'
+config_filepath = os.path.expanduser('~/.dysshrc')
 
 config = {
     # Default values go here.
-    'histfile': os.path.expanduser('~') + '/.dyssh-history',
+    'histfile': os.path.expanduser('~/.dyssh-history'),
     
     'local_hostname': 'local',
     'prompt': '%(remote_wd)s $',
@@ -61,42 +61,31 @@ def update(*args):
     global config_filepath
 
     overrides = {}
-    invalid_args = []
 
-    for arg in args:
+    for arg in dir(args):
+        
+        v = getattr(agrs, arg)
 
-        if arg.startswith('--'):
+        if arg == 'config':
+            
+            config_filepath = val
 
-            arg, _, val = arg.partition('=')
-            argkey = arg.strip('-').replace('-', '_')
+        elif arg in config.keys():
 
-            # Options that set a value
-            if argkey == 'config':
-                config_filepath = val
-                continue
-            elif _ == '=' and argkey in config.keys():
-                overrides[argkey] = val
-                if argkey == 'hosts':
-                    # Convert to a list
-                    config[argkey] = [i.strip() for i in val.split(',')]
-                elif argkey in ['config', 'histfile']:
-                    # Expand '~' as necessary:
-                    val = val.strip()
-                    if val.startswith('~/'):
-                        config[argkey] = os.path.expanduser('~') + val[2:]
-                elif argkey in ['envvars']:
-                    config[argkey] = val
-                continue
-
-            # Options which are just boolean flags
-            elif argkey in config.keys():
-                config[argkey] = True
-                continue
-
-        invalid_args.append(arg)
-
-    if len(invalid_args):
-        raise ValueError('Invalid arguments:', *invalid_args)
+            overrides[arg] = v
+            if arg == 'hosts':
+                config[arg] = [i.strip() for i in v.split(',')]
+            elif arg in ['config', 'histfile']:
+                # Expand '~' as necessary:
+                val = val.strip()
+                val = os.path.expanduser(val)
+                config[argkey] = val
+            elif arg in ['envvars']:
+                config[arg] = val
+                
+        else:
+            
+            config[arg] = v
 
     try:
 
