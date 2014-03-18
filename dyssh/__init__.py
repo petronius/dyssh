@@ -11,26 +11,6 @@ At the prompt, there are several commands available. All interactive commands
 colon. The :help command will display all available options.
 """
 
-
-#Options:
-#
-#--auto-add-hosts              If this flag is set, unfamiliar host keys will be
-#                              added automatically to the list of known hosts,
-#                              instead of causing dyssh to abort the connection
-#                              attempt. Generally, this is NOT something you want
-#                              to do.
-#--config=<path>               Specify a config file path other than the default
-#                              path (~/.dysshrc).
-#--hosts=host1[,host2[,...]]   Specify a list of hosts to pre-seed the host list
-#                              with. See the example dysshrc configuration file
-#                              for the formats available when specifying hosts.
-#--interactive                 Specify an interactive session. This will cause
-#                              sdsh to drop you into an interactive prompt after
-#                              executing any specified command. By default, if
-#                              a command is specified the program will exit
-#                              automatically when it is complete.
-#
-#--help                        Display this information and exit.
 __author__  = "Michael Schuller <michael.schuller@artlogic.net>"
 __version__ = "0.0.1"
 __license__ = "GNU Lesser General Public License (LGPL)"
@@ -61,8 +41,10 @@ ARGS = {
                 'automatically to the list of known hosts, instead of causing '
                 'dyssh to abort the connection attempt. Generally, this is NOT '
                 'something you want to do.',
+        'action': 'store_true',
+        'default': False,
     },
-    ('command',): {
+    ('-c', '--command',): {
         'help': 'The command to run. If `--interactive` is specified, this '
                 'command will run before starting the interactive prompt. If no'
                 ' command is specified, an interactive prompt is the default '
@@ -76,6 +58,7 @@ ARGS = {
                 'command is specified the program will exit automatically when'
                 ' it is complete.',
         'action': "store_true",
+        'default': True,
     },
 }
 
@@ -123,19 +106,6 @@ if __name__ == '__main__':
             if not hasattr(options, k):
                 setattr(options, k, v)
         argv = options
-
-#    argv = sys.argv[1:]
-#
-#    if '--help' in argv:
-#        print __doc__
-#        sys.exit(sysexits.EX_OK)
-
-#    command = None
-#    if len(argv) and not argv[-1].startswith('--'):
-#        command = argv[-1]
-#        argv = argv[:-1]
-#    elif not len(argv):
-#        argv = ['--interactive',]
 
     try:
         config.update(argv)
