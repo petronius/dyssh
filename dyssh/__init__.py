@@ -68,6 +68,7 @@ ARGS = {
                 'command will run before starting the interactive prompt. If no'
                 ' command is specified, an interactive prompt is the default '
                 'behaviour.',
+        'nargs': '?',
     },
     ('-s','--hosts'): {
         'help': 'A comma-seperated list of hosts to connect to on startup.',
@@ -125,21 +126,8 @@ if __name__ == '__main__':
                 setattr(options, k, v)
         argv = options
 
-#    argv = sys.argv[1:]
-#
-#    if '--help' in argv:
-#        print __doc__
-#        sys.exit(sysexits.EX_OK)
-
-#    command = None
-#    if len(argv) and not argv[-1].startswith('--'):
-#        command = argv[-1]
-#        argv = argv[:-1]
-#    elif not len(argv):
-#        argv = ['--interactive',]
-
     try:
-        config.update(argv)
+        dyssh.config.update(argv)
     except ValueError, e:
         error('',' '.join(e.args))
         error('',__doc__)

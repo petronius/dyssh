@@ -218,11 +218,17 @@ def cmd_list(*args):
     output = []
     for idx, item in enumerate(connections.conns.items()):
         host, hostinfo = item
+        try:
+            exitcode = hostinfo.get('history', [])[-1].get('exitcode')
+            if exitcode is None:
+                exitcode = '(command still processing)'
+        except IndexError:
+            exitcode = '(no commands run)'
         output.append((
             '[%s]' % idx,
             host,
             hostinfo.get('connected'),
-            hostinfo.get('exitcode')
+            exitcode,
         ))
     if not len(output):
         terminal.error(text = 'No hosts.')

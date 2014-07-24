@@ -287,8 +287,12 @@ class Connections(object):
         """
         host = self._gethost(h)
         if host:
-            history = self.get_history(host)[-1]
-            if history.get('exitcode') not in [None, -1]:
+            try:
+                history = self.get_history(host)[-1]
+            except TypeError:
+                # History for this host doesn't exist yet
+                history = {}
+            if not history or history.get('exitcode') not in [None, -1]:
                 self._info("No pending job on %s" % host)
                 return
             chan = history.get('chan')
