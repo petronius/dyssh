@@ -60,8 +60,7 @@ ARGS = {
     ('-a', '--auto-add-hosts'): {
         'help': 'If this flag is set, unfamiliar host keys will be added '
                 'automatically to the list of known hosts, instead of causing '
-                'dyssh to abort the connection attempt. Generally, this is NOT '
-                'something you want to do.',
+                'dyssh to abort the connection attempt.',
     },
     ('command',): {
         'help': 'The command to run. If `--interactive` is specified, this '
