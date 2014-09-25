@@ -88,6 +88,26 @@ class Connections(object):
         if lvl <= self.debug:
             self.info_output(msg)
 
+            
+    def _get_key(self):
+        """
+        Get an individual keystroke, with modifiers
+        """
+        # From: http://www.raspberrypi.org/forums/viewtopic.php?f=32&t=16882
+        fd = sys.stdin.fileno()
+        old = termios.tcgetattr(fd)
+        new = termios.tcgetattr(fd)
+        new[3] = new[3] & ~termios.ICANON & ~termios.ECHO
+        new[6][termios.VMIN] = 1
+        new[6][termios.VTIME] = 0
+        termios.tcsetattr(fd, termios.TCSANOW, new)
+        key = None
+        try:
+            key = os.read(fd, 3)
+        finally:
+            termios.tcsetattr(fd, termios.TCSAFLUSH, old)
+        return key
+
 
     def add(self, host):
         """
@@ -286,6 +306,7 @@ class Connections(object):
         https://github.com/paramiko/paramiko/blob/60c6e94e7dd6d7ac65c88ce1231f55d311777a34/demos/interactive.py
         """
         host = self._gethost(h)
+        host_key_mode = False
         if host:
             try:
                 history = self.get_history(host)[-1]
@@ -297,6 +318,7 @@ class Connections(object):
                 return
             chan = history.get('chan')
             oldtty = termios.tcgetattr(sys.stdin)
+            self._info("Joining host. Use CTRL-A, CTRL-C to disconnect.")
             try:
                 tty.setraw(sys.stdin.fileno())
                 tty.setcbreak(sys.stdin.fileno())
@@ -308,12 +330,13 @@ class Connections(object):
                     try:
                         while True:
                             o = output.read(1)
+                            if not o: break
                             sys.stdout.write(o)
                             oldoutput += o
                     except socket.timeout:
                         pass
                 while True:
-                    r = select.select([chan, sys.stdin], [], [])[0]
+                    r = select.select([chan, sys.stdin], [], [], .1)[0]
                     if chan in r:
                         try:
                             x = chan.recv(1024)
@@ -327,7 +350,26 @@ class Connections(object):
                         except socket.timeout:
                             pass
                     if sys.stdin in r:
-                        x = sys.stdin.read(1)
+                        x = self._get_key()
+                        if not host_key_mode and x == '\x01':
+                            host_key_mode = True
+                            #self._info('Host key mode set. Next keystroke will go to dyssh')
+                            continue
+
+                        elif host_key_mode:
+                            if x == '\x01':
+                                # Send the CTRL-A onward
+                                pass
+                            if x == '\x02':
+                                raise Exception("CTRL-A: rasie Exception()")
+                            if x == '\x03':
+                                # Disconnect the terminal
+                                #self._info('CTRL-C: disconnect')
+                                break
+                            host_key_mode = False
+                        else:
+                            host_key_mode = False
+
                         if len(x) == 0:
                             break
                         chan.send(x)
@@ -340,7 +382,7 @@ class Connections(object):
                     output.seek(0)
                     self.hconn[host]['history'][-1]['output'] = output
             finally:
-                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, oldtty)
+                termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, oldtty)
         else:
             self._info("No such host in list: %s" % h)
 

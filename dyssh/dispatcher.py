@@ -4,22 +4,40 @@ remote hosts and acts accordingly.
 """
 
 # TODO: output modes (first-host-and-diffs; etc.)
-
+# TODO: :hold <host> / :hold pending / :hold all and :resume commands to stop
+#       sending commands to one, still processing, or all hosts. :resume is
+#       exactly the same, it just does the reverse.
 
 import sys
 import os
 import pydoc
+import signal
 import StringIO
 import textwrap
 import traceback
 
 import connections
 import config
+import ui
 
 from utils import terminal
 
 # Debugging!
 last_traceback = None
+
+def abort(signum, frame):
+    raise Exception('Abort signal received.')
+
+
+# Swallow CTRL-C in interactive mode
+UI_SIGNAL_HANDLERS = {
+    signal.SIGINT: lambda signum, frame: None,
+    signal.SIGABRT: abort,
+}
+
+def register_signal_handlers():
+    for k, v in UI_SIGNAL_HANDLERS.items():
+        signal.signal(k, v)
 
 
 def run_interactive(command = ''):
@@ -27,6 +45,8 @@ def run_interactive(command = ''):
     Interactive command loop for the dyssh prompt.
     """
     global last_traceback
+
+    register_signal_handlers()
 
     if command:
         run(command)
@@ -71,9 +91,8 @@ def run_interactive(command = ''):
                 run(command)
         except Exception, e:
             last_traceback = traceback.format_exc()
-            terminal.error(text = 'Error attempting to execute command: %s' % e,
-                lvl = 2)
-            print "Enter `:traceback` to print the last error traceback."
+            ui.show_user_warning('Error attempting to execute command: %s' % e)
+            ui.show_user_warning("Enter `:traceback` to print the last error traceback.")
 
     return os.EX_OK
 
@@ -86,7 +105,7 @@ def run(command = ''):
     """
 
     if not len(connections.conns.hosts):
-        terminal.error(text = 'No hosts specified.')
+        ui.show_user_warning('No hosts specified.')
 
     connections.conns.run_command_all(command)
 
@@ -152,7 +171,7 @@ def cmd_help(*args):
     output = output.split('\n')
     output = filter(lambda x: x.strip(), output)
     output = '\n'.join(output)
-    print '\n', textwrap.dedent(output), '\n'
+    ui.write('\n', textwrap.dedent(output), '\n')
     return os.EX_OK
 
 
@@ -173,7 +192,7 @@ def cmd_history(*args):
                     h.get('command'),
                     h.get('exitcode'),
                 ))
-            print terminal.format_columns(headers, output), '\n'
+            ui.write(terminal.format_columns(headers, output), '\n')
     else:
         return os.EX_USAGE
     return os.EX_OK
@@ -186,6 +205,20 @@ def cmd_join(*args):
                           session. When the session ends (either through exit,
                           disconnect, or error), you will be returned to the
                           dyssh prompt.
+
+                          You can disconnect manually by entering host key mode
+                          (CTRL-A), and pressing CTRL-C.
+
+                          All host-key mode commands are as follows:
+
+                          CTRL-A    - Send CTRL-A to the remote host.
+                          CTRL-B    - Raise a generic Exception. (Useful for
+                                      debugging.) This will also have the side-
+                                      effect of disconnecting the terminala and
+                                      returning you to the dyssh prompt.
+                          CTRL-C    - Disconnect the terminal from the virtual
+                                      terminal that the process is running in
+                                      (return to the dyssh prompt).
     """
     if len(args) == 1:
         connections.conns.join(args[0])
@@ -234,7 +267,7 @@ def cmd_list(*args):
         terminal.error(text = 'No hosts.')
         return os.EX_OK
     headers = ('', 'Hostname', 'Connected', 'Last exit')
-    print '\n', terminal.format_columns(headers, output), '\n'
+    ui.write('\n', terminal.format_columns(headers, output), '\n')
     return os.EX_OK
 
 
@@ -280,7 +313,7 @@ def cmd_timeout(*args):
         config.config['job_timeout'] = t
         terminal.error(text = "Timeout set to %s seconds" % t)
     elif len(args) == 0:
-        print config.get('job_timeout')
+        ui.write(config.get('job_timeout'))
     else:
         return os.EX_USAGE
 
@@ -303,12 +336,12 @@ def cmd_env(*args):
     """
     envvars = config.get('envvars', {})
     if len(args) == 1 and args[0] == 'list':
-        print terminal.format_columns(
+        ui.write(terminal.format_columns(
             ('Variable', 'Value'),
             sorted(envvars.items())
-        )
+        ))
     elif len(args) == 1 and args[0] == 'format':
-        print config.get('envvar_format', '')
+        ui.write(config.get('envvar_format', ''))
     elif len(args) > 1 and args[0] == 'format':
         config.config['envvar_format'] = ' '.join(args[1:])
     elif len(args) > 1 and args[0] == 'set':
@@ -400,7 +433,7 @@ def cmd_status(*args):
                 exit_status,
             ))
         headers = ('', 'Host', 'Exit code')
-        print '\n', terminal.format_columns(headers, output), '\n'
+        ui.write('\n', terminal.format_columns(headers, output), '\n')
     else:
         return os.EX_USAGE
 
@@ -409,7 +442,7 @@ def cmd_status(*args):
 
 def cmd_traceback(*args):
     global last_traceback
-    print last_traceback
+    ui.write(last_traceback)
     return os.EX_OK
 
 
